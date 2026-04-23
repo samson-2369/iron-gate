@@ -1,0 +1,43 @@
+groups:
+  - name: broken-auth
+    rules:
+      - alert: BruteForceLoginAttempts
+        expr: |
+          sum by (remote_addr) (
+            rate({job="crapi-nginx"} |= "POST" |= "/identity/api/auth/login" |= "401" [2m])
+          ) > 5
+        for: 1m
+        labels:
+          severity: high
+          category: owasp-api2
+        annotations:
+          summary: "Brute force login attempts from {{ $labels.remote_addr }}"
+          description: >
+            More than 5 failed login attempts per minute from a single IP.
+            Indicative of credential stuffing or brute force (OWASP API2).
+
+      - alert: TokenAbuse
+        expr: |
+          sum by (remote_addr) (
+            rate({job="crapi-nginx"} |= "401" [5m])
+          ) > 20
+        for: 2m
+        labels:
+          severity: medium
+          category: owasp-api2
+        annotations:
+          summary: "High rate of 401 responses — possible token abuse"
+          description: "20+ unauthorized responses in 5 minutes from {{ $labels.remote_addr }}"
+
+      - alert: PasswordResetAbuse
+        expr: |
+          sum by (remote_addr) (
+            rate({job="crapi-nginx"} |= "POST" |= "/identity/api/auth/forget-password" [5m])
+          ) > 3
+        for: 1m
+        labels:
+          severity: medium
+          category: owasp-api2
+        annotations:
+          summary: "Password reset endpoint abuse from {{ $labels.remote_addr }}"
+          description: "Repeated password reset requests — possible account takeover attempt."

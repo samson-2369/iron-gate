@@ -1,0 +1,46 @@
+groups:
+  - name: ot-probe
+    rules:
+      - alert: ModbusConnectionFromUnknownHost
+        expr: |
+          {job="conpot"} |= "modbus" | json
+          | remote_addr !~ "10\\.0\\.0\\.(91|101)"
+          | count_over_time [5m] > 1
+        for: 0s
+        labels:
+          severity: critical
+          category: ot-targeting
+        annotations:
+          summary: "Modbus connection from unexpected host {{ $labels.remote_addr }}"
+          description: >
+            Modbus connection from {{ $labels.remote_addr }}, which is not a known
+            attacker or analyst host. This may indicate pivot from a compromised
+            API server (10.0.0.100) to the OT layer.
+          runbook: "Check iron-gate-api for signs of compromise — is 10.0.0.100 the source?"
+
+      - alert: S7CommDetected
+        expr: |
+          {job="conpot"} |= "s7comm" | count_over_time [2m] > 0
+        for: 0s
+        labels:
+          severity: high
+          category: ot-targeting
+        annotations:
+          summary: "S7comm (Siemens) protocol activity on iron-gate-ot"
+          description: >
+            S7comm traffic detected on Conpot. This protocol is used to interact
+            with Siemens PLCs. Any S7comm activity in this lab is noteworthy.
+
+      - alert: APIHostConnectingToOT
+        expr: |
+          {job="conpot"} |= "10.0.0.100" | count_over_time [5m] > 1
+        for: 0s
+        labels:
+          severity: critical
+          category: api-to-ot-pivot
+        annotations:
+          summary: "API server (10.0.0.100) connecting to OT layer"
+          description: >
+            The iron-gate-api host (10.0.0.100) is connecting to Conpot (iron-gate-ot).
+            This is the API-to-OT pivot pattern from the Inputs Lie threat model.
+            The API host may be compromised and pivoting to ICS protocols.

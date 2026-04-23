@@ -1,0 +1,44 @@
+groups:
+  - name: data-exposure
+    rules:
+      - alert: LargeAPIResponse
+        expr: |
+          sum by (remote_addr, request) (
+            rate({job="crapi-nginx"} | json | body_bytes_sent > 50000 [5m])
+          ) > 0
+        for: 30s
+        labels:
+          severity: medium
+          category: owasp-api3
+        annotations:
+          summary: "Abnormally large API response to {{ $labels.remote_addr }}"
+          description: >
+            Response body > 50KB on API endpoint {{ $labels.request }}.
+            May indicate excessive data exposure (OWASP API3) — server
+            returning internal fields not needed by the client.
+
+      - alert: BulkUserDataAccess
+        expr: |
+          sum by (remote_addr) (
+            rate({job="crapi-nginx"} |= "GET" |= "/identity/api/v2/user" [5m])
+          ) > 5
+        for: 1m
+        labels:
+          severity: high
+          category: owasp-api3
+        annotations:
+          summary: "Bulk user data access from {{ $labels.remote_addr }}"
+          description: "Repeated user profile endpoint access — possible mass data harvesting."
+
+      - alert: OTDataLeak
+        expr: |
+          {job="conpot"} |= "read_holding_registers" |= "success" | json | count_over_time [5m] > 20
+        for: 1m
+        labels:
+          severity: high
+          category: ot-exposure
+        annotations:
+          summary: "High volume Modbus register reads on iron-gate-ot"
+          description: >
+            More than 20 Modbus read_holding_registers operations in 5 minutes.
+            Possible OT process data enumeration via Modbus.

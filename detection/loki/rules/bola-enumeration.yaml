@@ -1,0 +1,30 @@
+groups:
+  - name: bola-enumeration
+    rules:
+      - alert: BOLAObjectEnumeration
+        expr: |
+          sum by (remote_addr) (
+            rate({job="crapi-nginx"} |= "GET" |= "/api/v2/vehicle/" [1m])
+          ) > 10
+        for: 30s
+        labels:
+          severity: high
+          category: owasp-api1
+        annotations:
+          summary: "BOLA enumeration detected from {{ $labels.remote_addr }}"
+          description: >
+            More than 10 requests/min to /api/v2/vehicle/* from a single IP.
+            Indicative of BOLA (OWASP API1) — iterating over object IDs to
+            access other users' data.
+          runbook: "Check response codes — 200s on sequential IDs = confirmed BOLA"
+
+      - alert: BOLAHighVolumeVehicleAccess
+        expr: |
+          count_over_time({job="crapi-nginx"} |= "/api/v2/vehicle/" | regexp "vehicle/(?P<id>[0-9]+)" [5m]) > 50
+        for: 1m
+        labels:
+          severity: critical
+          category: owasp-api1
+        annotations:
+          summary: "High volume sequential vehicle ID access"
+          description: "50+ requests to /api/v2/vehicle/{id} in 5 minutes — likely object enumeration."

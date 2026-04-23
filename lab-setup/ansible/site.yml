@@ -1,0 +1,48 @@
+---
+- name: Bootstrap all lab VMs
+  hosts: lab
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install common packages
+      apt:
+        name:
+          - curl
+          - wget
+          - git
+          - net-tools
+          - tcpdump
+          - nmap
+          - python3-pip
+          - jq
+          - unzip
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Set timezone
+      community.general.timezone:
+        name: America/New_York
+
+- name: Deploy crAPI on iron-gate-api
+  hosts: api
+  become: true
+  roles:
+    - crapi
+
+- name: Deploy Conpot on iron-gate-ot
+  hosts: ot
+  become: true
+  roles:
+    - conpot
+
+- name: Deploy monitoring stack on iron-gate-monitor
+  hosts: monitoring
+  become: true
+  roles:
+    - monitoring
