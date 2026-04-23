@@ -8,7 +8,8 @@ KALI_IMG="/tmp/kali-cloud.qcow2"
 SSHKEY_FILE="/tmp/iron_gate.pub"
 GW="10.0.0.1"
 DNS="8.8.8.8"
-PASS="changeme"
+# Set VM_PASSWORD env var before running: export VM_PASSWORD=your_password
+PASS="${VM_PASSWORD:-changeme}"
 
 check_prereqs() {
   [ -f "$UBIMG" ] || { echo "ERROR: Ubuntu 22.04 cloud image not found at $UBIMG"; exit 1; }

@@ -83,7 +83,8 @@
           ports:
             - "3000:3000"
           environment:
-            - GF_SECURITY_ADMIN_PASSWORD=changeme
+            # Set GRAFANA_PASSWORD env var before deploying: export GRAFANA_PASSWORD=your_password
+            - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-changeme}
             - GF_USERS_ALLOW_SIGN_UP=false
             - GF_AUTH_ANONYMOUS_ENABLED=false
           volumes:

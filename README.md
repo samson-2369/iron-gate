@@ -134,3 +134,5 @@ SSH access uses key `~/.ssh/iron_gate` (ed25519).
 - IP: YOUR_PROXMOX_IP
 - Node: pve
 - Build script: [lab-setup/proxmox/vm-build.sh](lab-setup/proxmox/vm-build.sh)
+
+> Set YOUR_PROXMOX_IP to your actual Proxmox host IP before running lab-setup scripts.
