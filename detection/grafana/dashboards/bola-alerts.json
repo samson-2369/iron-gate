@@ -1,0 +1,608 @@
+{
+  "meta": {
+    "exported_at": "2026-04-25T22:08:00Z",
+    "grafana_version": "10.2.0",
+    "folder": "iron-gate-alerts",
+    "datasource": "Loki (P8E80F9AEF21F6940)",
+    "lab": "iron-gate"
+  },
+  "provisioning_export": {
+    "apiVersion": 1,
+    "groups": [
+      {
+        "orgId": 1,
+        "name": "auth-detection",
+        "folder": "iron-gate-alerts",
+        "interval": "1m",
+        "rules": [
+          {
+            "uid": "d8bf4908-d413-406f-b141-0f75d8aa0447",
+            "title": "Broken Auth - Login Brute Force",
+            "condition": "C",
+            "data": [
+              {
+                "refId": "A",
+                "queryType": "range",
+                "relativeTimeRange": {
+                  "from": 120,
+                  "to": 0
+                },
+                "datasourceUid": "P8E80F9AEF21F6940",
+                "model": {
+                  "expr": "count_over_time({job=\"crapi-nginx\"} |= \"/identity/api/auth/login\" |= \"401\" [2m])",
+                  "instant": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "range": true,
+                  "refId": "A"
+                }
+              },
+              {
+                "refId": "B",
+                "relativeTimeRange": {
+                  "from": 120,
+                  "to": 0
+                },
+                "datasourceUid": "-100",
+                "model": {
+                  "conditions": [],
+                  "datasource": {
+                    "type": "__expr__",
+                    "uid": "-100"
+                  },
+                  "expression": "A",
+                  "hide": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "reducer": "max",
+                  "refId": "B",
+                  "settings": {
+                    "mode": "dropNN"
+                  },
+                  "type": "reduce"
+                }
+              },
+              {
+                "refId": "C",
+                "relativeTimeRange": {
+                  "from": 120,
+                  "to": 0
+                },
+                "datasourceUid": "-100",
+                "model": {
+                  "conditions": [
+                    {
+                      "evaluator": {
+                        "params": [
+                          5
+                        ],
+                        "type": "gt"
+                      },
+                      "unloadEvaluator": null
+                    }
+                  ],
+                  "datasource": {
+                    "type": "__expr__",
+                    "uid": "-100"
+                  },
+                  "expression": "B",
+                  "hide": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "refId": "C",
+                  "type": "threshold"
+                }
+              }
+            ],
+            "noDataState": "OK",
+            "execErrState": "OK",
+            "for": "0s",
+            "annotations": {
+              "description": "More than 5 failed login attempts (401) in 2 minutes \u2014 OWASP API2.",
+              "summary": "Login brute-force detected on /identity/api/auth/login"
+            },
+            "labels": {
+              "category": "broken-auth",
+              "severity": "high"
+            },
+            "isPaused": false
+          }
+        ]
+      },
+      {
+        "orgId": 1,
+        "name": "bola-detection",
+        "folder": "iron-gate-alerts",
+        "interval": "1m",
+        "rules": [
+          {
+            "uid": "ec933336-17a6-450e-ac87-acbd79800a42",
+            "title": "BOLA - Order ID Enumeration",
+            "condition": "C",
+            "data": [
+              {
+                "refId": "A",
+                "queryType": "range",
+                "relativeTimeRange": {
+                  "from": 300,
+                  "to": 0
+                },
+                "datasourceUid": "P8E80F9AEF21F6940",
+                "model": {
+                  "expr": "count_over_time({job=\"crapi-nginx\"} |= \"/workshop/api/shop/orders/\" |= \"GET\" [5m])",
+                  "instant": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "range": true,
+                  "refId": "A"
+                }
+              },
+              {
+                "refId": "B",
+                "relativeTimeRange": {
+                  "from": 300,
+                  "to": 0
+                },
+                "datasourceUid": "-100",
+                "model": {
+                  "conditions": [],
+                  "datasource": {
+                    "type": "__expr__",
+                    "uid": "-100"
+                  },
+                  "expression": "A",
+                  "hide": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "reducer": "max",
+                  "refId": "B",
+                  "settings": {
+                    "mode": "dropNN"
+                  },
+                  "type": "reduce"
+                }
+              },
+              {
+                "refId": "C",
+                "relativeTimeRange": {
+                  "from": 300,
+                  "to": 0
+                },
+                "datasourceUid": "-100",
+                "model": {
+                  "conditions": [
+                    {
+                      "evaluator": {
+                        "params": [
+                          10
+                        ],
+                        "type": "gt"
+                      },
+                      "unloadEvaluator": null
+                    }
+                  ],
+                  "datasource": {
+                    "type": "__expr__",
+                    "uid": "-100"
+                  },
+                  "expression": "B",
+                  "hide": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "refId": "C",
+                  "type": "threshold"
+                }
+              }
+            ],
+            "noDataState": "OK",
+            "execErrState": "OK",
+            "for": "0s",
+            "annotations": {
+              "description": "More than 10 GET requests to shop/orders in 5 minutes \u2014 possible OWASP API1 BOLA attack.",
+              "summary": "BOLA enumeration detected on /workshop/api/shop/orders/"
+            },
+            "labels": {
+              "category": "bola",
+              "severity": "high"
+            },
+            "isPaused": false
+          },
+          {
+            "uid": "c30c0e6f-4fd9-4fca-b886-d91626a69e37",
+            "title": "Excessive Data Exposure - Order ID Enumeration",
+            "condition": "C",
+            "data": [
+              {
+                "refId": "A",
+                "queryType": "range",
+                "relativeTimeRange": {
+                  "from": 300,
+                  "to": 0
+                },
+                "datasourceUid": "P8E80F9AEF21F6940",
+                "model": {
+                  "expr": "count_over_time({job=\"crapi-nginx\"} |= \"/workshop/api/shop/orders/\" |= \"GET\" [5m])",
+                  "instant": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "range": true,
+                  "refId": "A"
+                }
+              },
+              {
+                "refId": "B",
+                "relativeTimeRange": {
+                  "from": 300,
+                  "to": 0
+                },
+                "datasourceUid": "-100",
+                "model": {
+                  "conditions": [],
+                  "datasource": {
+                    "type": "__expr__",
+                    "uid": "-100"
+                  },
+                  "expression": "A",
+                  "hide": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "reducer": "max",
+                  "refId": "B",
+                  "settings": {
+                    "mode": "dropNN"
+                  },
+                  "type": "reduce"
+                }
+              },
+              {
+                "refId": "C",
+                "relativeTimeRange": {
+                  "from": 300,
+                  "to": 0
+                },
+                "datasourceUid": "-100",
+                "model": {
+                  "conditions": [
+                    {
+                      "evaluator": {
+                        "params": [
+                          5
+                        ],
+                        "type": "gt"
+                      },
+                      "unloadEvaluator": null
+                    }
+                  ],
+                  "datasource": {
+                    "type": "__expr__",
+                    "uid": "-100"
+                  },
+                  "expression": "B",
+                  "hide": false,
+                  "intervalMs": 1000,
+                  "maxDataPoints": 43200,
+                  "refId": "C",
+                  "type": "threshold"
+                }
+              }
+            ],
+            "noDataState": "OK",
+            "execErrState": "OK",
+            "for": "0s",
+            "annotations": {
+              "description": "5+ GET requests to distinct /workshop/api/shop/orders/{id} paths in 5 min \u2014 OWASP API3.",
+              "summary": "Systematic order ID scanning detected"
+            },
+            "labels": {
+              "category": "data-exposure",
+              "severity": "medium"
+            },
+            "isPaused": false
+          }
+        ]
+      }
+    ]
+  },
+  "rules": [
+    {
+      "id": 1,
+      "uid": "ec933336-17a6-450e-ac87-acbd79800a42",
+      "orgID": 1,
+      "folderUID": "iron-gate-alerts",
+      "ruleGroup": "bola-detection",
+      "title": "BOLA - Order ID Enumeration",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "range",
+          "relativeTimeRange": {
+            "from": 300,
+            "to": 0
+          },
+          "datasourceUid": "P8E80F9AEF21F6940",
+          "model": {
+            "expr": "count_over_time({job=\"crapi-nginx\"} |= \"/workshop/api/shop/orders/\" |= \"GET\" [5m])",
+            "instant": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "range": true,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 300,
+            "to": 0
+          },
+          "datasourceUid": "-100",
+          "model": {
+            "conditions": [],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "-100"
+            },
+            "expression": "A",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "reducer": "max",
+            "refId": "B",
+            "settings": {
+              "mode": "dropNN"
+            },
+            "type": "reduce"
+          }
+        },
+        {
+          "refId": "C",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 300,
+            "to": 0
+          },
+          "datasourceUid": "-100",
+          "model": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [
+                    10
+                  ],
+                  "type": "gt"
+                },
+                "unloadEvaluator": null
+              }
+            ],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "-100"
+            },
+            "expression": "B",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "C",
+            "type": "threshold"
+          }
+        }
+      ],
+      "updated": "2026-04-25T22:07:26Z",
+      "noDataState": "OK",
+      "execErrState": "OK",
+      "for": "0s",
+      "annotations": {
+        "description": "More than 10 GET requests to shop/orders in 5 minutes \u2014 possible OWASP API1 BOLA attack.",
+        "summary": "BOLA enumeration detected on /workshop/api/shop/orders/"
+      },
+      "labels": {
+        "category": "bola",
+        "severity": "high"
+      },
+      "provenance": "api",
+      "isPaused": false
+    },
+    {
+      "id": 2,
+      "uid": "d8bf4908-d413-406f-b141-0f75d8aa0447",
+      "orgID": 1,
+      "folderUID": "iron-gate-alerts",
+      "ruleGroup": "auth-detection",
+      "title": "Broken Auth - Login Brute Force",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "range",
+          "relativeTimeRange": {
+            "from": 120,
+            "to": 0
+          },
+          "datasourceUid": "P8E80F9AEF21F6940",
+          "model": {
+            "expr": "count_over_time({job=\"crapi-nginx\"} |= \"/identity/api/auth/login\" |= \"401\" [2m])",
+            "instant": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "range": true,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 120,
+            "to": 0
+          },
+          "datasourceUid": "-100",
+          "model": {
+            "conditions": [],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "-100"
+            },
+            "expression": "A",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "reducer": "max",
+            "refId": "B",
+            "settings": {
+              "mode": "dropNN"
+            },
+            "type": "reduce"
+          }
+        },
+        {
+          "refId": "C",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 120,
+            "to": 0
+          },
+          "datasourceUid": "-100",
+          "model": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [
+                    5
+                  ],
+                  "type": "gt"
+                },
+                "unloadEvaluator": null
+              }
+            ],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "-100"
+            },
+            "expression": "B",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "C",
+            "type": "threshold"
+          }
+        }
+      ],
+      "updated": "2026-04-25T22:07:26Z",
+      "noDataState": "OK",
+      "execErrState": "OK",
+      "for": "0s",
+      "annotations": {
+        "description": "More than 5 failed login attempts (401) in 2 minutes \u2014 OWASP API2.",
+        "summary": "Login brute-force detected on /identity/api/auth/login"
+      },
+      "labels": {
+        "category": "broken-auth",
+        "severity": "high"
+      },
+      "provenance": "api",
+      "isPaused": false
+    },
+    {
+      "id": 3,
+      "uid": "c30c0e6f-4fd9-4fca-b886-d91626a69e37",
+      "orgID": 1,
+      "folderUID": "iron-gate-alerts",
+      "ruleGroup": "bola-detection",
+      "title": "Excessive Data Exposure - Order ID Enumeration",
+      "condition": "C",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "range",
+          "relativeTimeRange": {
+            "from": 300,
+            "to": 0
+          },
+          "datasourceUid": "P8E80F9AEF21F6940",
+          "model": {
+            "expr": "count_over_time({job=\"crapi-nginx\"} |= \"/workshop/api/shop/orders/\" |= \"GET\" [5m])",
+            "instant": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "range": true,
+            "refId": "A"
+          }
+        },
+        {
+          "refId": "B",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 300,
+            "to": 0
+          },
+          "datasourceUid": "-100",
+          "model": {
+            "conditions": [],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "-100"
+            },
+            "expression": "A",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "reducer": "max",
+            "refId": "B",
+            "settings": {
+              "mode": "dropNN"
+            },
+            "type": "reduce"
+          }
+        },
+        {
+          "refId": "C",
+          "queryType": "",
+          "relativeTimeRange": {
+            "from": 300,
+            "to": 0
+          },
+          "datasourceUid": "-100",
+          "model": {
+            "conditions": [
+              {
+                "evaluator": {
+                  "params": [
+                    5
+                  ],
+                  "type": "gt"
+                },
+                "unloadEvaluator": null
+              }
+            ],
+            "datasource": {
+              "type": "__expr__",
+              "uid": "-100"
+            },
+            "expression": "B",
+            "hide": false,
+            "intervalMs": 1000,
+            "maxDataPoints": 43200,
+            "refId": "C",
+            "type": "threshold"
+          }
+        }
+      ],
+      "updated": "2026-04-25T22:07:26Z",
+      "noDataState": "OK",
+      "execErrState": "OK",
+      "for": "0s",
+      "annotations": {
+        "description": "5+ GET requests to distinct /workshop/api/shop/orders/{id} paths in 5 min \u2014 OWASP API3.",
+        "summary": "Systematic order ID scanning detected"
+      },
+      "labels": {
+        "category": "data-exposure",
+        "severity": "medium"
+      },
+      "provenance": "api",
+      "isPaused": false
+    }
+  ]
+}
