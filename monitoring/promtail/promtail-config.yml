@@ -1,0 +1,53 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://10.0.0.102:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: crapi-nginx
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: crapi-nginx
+          host: iron-gate-api
+          __path__: /var/lib/docker/containers/*/*-json.log
+    pipeline_stages:
+      - json:
+          expressions:
+            log: log
+            stream: stream
+      - output:
+          source: log
+
+  - job_name: crapi-access
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: crapi-access
+          host: iron-gate-api
+          container: crapi-access-proxy
+          __path__: /var/lib/docker/containers/7853e634b164944503ecf9c6ed79dc292a0821717a9a222d0a9c3bb7340759c3/7853e634b164944503ecf9c6ed79dc292a0821717a9a222d0a9c3bb7340759c3-json.log
+    pipeline_stages:
+      - json:
+          expressions:
+            log: log
+      - output:
+          source: log
+      - json:
+          expressions:
+            remote_addr: remote_addr
+            method: method
+            path: path
+            status: status
+          source: log
+      - labels:
+          remote_addr:
+          method:
+          status:

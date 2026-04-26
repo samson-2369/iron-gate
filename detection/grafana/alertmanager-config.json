@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "exported_at": "2026-04-26T03:28:00Z",
+    "grafana_version": "10.2.0",
+    "lab": "iron-gate",
+    "note": "No Slack webhook available in lab environment; webhook contact point routes to local Alertmanager for end-to-end routing demonstration. Replace url with real Slack webhook for production."
+  },
+  "contact_points": [
+    {
+      "uid": "",
+      "name": "email receiver",
+      "type": "email",
+      "settings": {
+        "addresses": "<example@email.com>"
+      },
+      "disableResolveMessage": false
+    },
+    {
+      "uid": "bcd38af8-18b7-4d13-8623-040c1f7c504d",
+      "name": "iron-gate-webhook",
+      "type": "webhook",
+      "settings": {
+        "authorization_credentials": "[REDACTED]",
+        "httpMethod": "POST",
+        "message": "Severity={{ .CommonLabels.severity }} Category={{ .CommonLabels.category }} Host={{ .CommonLabels.host }}",
+        "password": "[REDACTED]",
+        "title": "Iron-Gate Alert: {{ .CommonLabels.alertname }}",
+        "url": "http://10.0.0.102:9093/api/v2/alerts"
+      },
+      "disableResolveMessage": false,
+      "provenance": "api"
+    }
+  ],
+  "notification_policy": {
+    "receiver": "iron-gate-webhook",
+    "group_by": [
+      "alertname",
+      "category",
+      "severity"
+    ],
+    "routes": [
+      {
+        "receiver": "iron-gate-webhook",
+        "group_by": [
+          "alertname",
+          "category"
+        ],
+        "matchers": [
+          "severity=\"high\""
+        ],
+        "group_wait": "0s",
+        "group_interval": "1m",
+        "repeat_interval": "5m"
+      },
+      {
+        "receiver": "iron-gate-webhook",
+        "group_by": [
+          "alertname",
+          "category"
+        ],
+        "matchers": [
+          "severity=\"medium\""
+        ],
+        "group_wait": "30s",
+        "group_interval": "5m",
+        "repeat_interval": "30m"
+      }
+    ],
+    "group_wait": "10s",
+    "group_interval": "1m",
+    "repeat_interval": "5m",
+    "provenance": "api"
+  }
+}
