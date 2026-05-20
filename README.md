@@ -73,6 +73,87 @@ Grafana: `http://10.0.0.102:3000`
 
 ---
 
+## Lab Execution & Findings
+
+This lab demonstrates the detection techniques outlined in [*Inputs Lie Part 4: Detection at the Signal Layer*](https://www.linkedin.com/pulse/detecting-lies-signal-layer-norris-cornell-cmefe/) (published May 5, 2026). The following findings were discovered during lab sessions 3–5.
+
+### Finding 1: Anomaly Detection via Request Sequence (BOLA Attack)
+
+**Attack:** Object enumeration against `GET /workshop/api/shop/orders/{id}` endpoint  
+**Lab run:** Session 3  
+**Test parameters:** 200 sequential requests across enumerable object IDs
+
+**Result:**
+```
+Requests: 200
+HTTP 200 responses: 5
+HTTP 500 responses: 195
+Success rate: 2.5%
+```
+
+**Key insight:** The anomaly is not the individual HTTP 200 (legitimate request), but the *sequence* of 200 attempts with 195 failures interspersed with 5 successes. Traditional request-level detection misses this. Behavioral detection (request rate + failure clustering) catches it.
+
+**Detection in Grafana:** API Object ID Heatmap panel shows request pattern over time. The clustering of 200 requests in 2-minute window flags as anomalous.
+
+---
+
+### Finding 2: Timing Drift Evasion (Detection Window Blind Spot)
+
+**Attack:** Broken authentication + request spacing  
+**Lab run:** Session 4  
+**Attack parameters:** Attacker spaces requests to 1 request per 4 minutes
+
+**Result:**
+```
+Detection window: 5 minutes
+Request interval: 4 minutes (240 seconds)
+Requests per window: 1-2
+Detection rule status: NO ALERT
+```
+
+**Key insight:** A 5-minute tumbling detection window cannot detect attacks spaced at 4-minute intervals. The attacker stays below the threshold by design. Fixed-window alerting is vulnerable to this simple evasion.
+
+**Defense:** Sliding windows + exponential backoff detection. If N requests occur in time window T, alert. If another request occurs within 2T, escalate.
+
+---
+
+### Finding 3: Broken Auth Detection Failure (Logging Blind Spot)
+
+**Attack:** Distributed brute-force authentication attempts  
+**Lab run:** Sessions 4–5  
+**Initial result:** Loki `broken-auth` rule fired 0 times across 6 attack sessions  
+**Root cause:** Django debug logs output no HTTP status codes
+
+**Investigation:**
+```
+Django log format: 'GET /api/auth/login 192.168.1.100'
+Missing: HTTP status code (200, 401, 500)
+Result: Cannot distinguish failed auth (401) from successful (200)
+```
+
+**Fix implemented:** nginx reverse proxy with structured JSON logging
+```
+nginx log format:
+{
+  "status": 401,
+  "remote_addr": "10.0.0.101",
+  "method": "POST",
+  "path": "/api/auth/login",
+  "response_time": 0.045
+}
+```
+
+**Result after fix:**
+```
+Loki rule: Match status=401 AND remote_addr=10.0.0.101 AND count > 10 in 1min
+Detection: ✓ ALERT triggered
+Attacker IP: 10.0.0.101 identified
+```
+
+**Key insight:** Detection is only as good as your logs. Even the right detection rule fails silently if the underlying data is incomplete.
+
+---
+
 ## Attack Scenarios
 
 ### OWASP API Top 10 ([/attacks/owasp-api-top10](/attacks/owasp-api-top10))
@@ -112,6 +193,31 @@ Scenarios where API compromise enables lateral movement to the OT layer — quer
 - Part 2: Signals Layer — protocol-level trust failures
 - Part 3: Logic Follows Lies — how false inputs propagate through control logic
 - Part 4: The API Layer ← *this lab*
+
+---
+
+## Research Connection
+
+Iron Gate is the practical lab foundation for the [*Inputs Lie*](https://cornellsecurity.com/) framework, which argues that critical infrastructure fails when systems implicitly trust unverifiable inputs.
+
+**Series overview:**
+- **Part 1:** Physics layer — sensor spoofing and signal manipulation
+- **Part 2:** Signals layer — protocol-level trust failures (SCADA, DNP3, S7)
+- **Part 3:** Logic layer — how false inputs propagate through control logic
+- **Part 4 (this lab):** Detection strategies at the signal layer
+
+Each part builds on the previous framework. This lab demonstrates *Technique 1–4* from Part 4 using real attack scenarios against crAPI (API layer) and Conpot (OT layer simulator).
+
+**Key research question being tested:**  
+*Can defenders detect API-to-OT attack chains when the attacker spaces requests deliberately, and when logging is incomplete?*
+
+Answer: Yes, with proper detection engineering. See findings above.
+
+### Methodology
+
+All attacks were executed manually in controlled lab environment. Attack parameters (request count, timing, payloads) are documented per session to enable reproducibility.
+
+For detection methodology and full analysis, see [*Inputs Lie Part 4: Detection at the Signal Layer*](https://www.linkedin.com/pulse/detecting-lies-signal-layer-norris-cornell-cmefe/).
 
 ---
 
